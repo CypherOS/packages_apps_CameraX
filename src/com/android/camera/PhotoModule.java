@@ -70,6 +70,7 @@ import android.widget.SeekBar.OnSeekBarChangeListener;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import com.android.camera.app.CameraApp;
 import com.android.camera.CameraManager.CameraAFCallback;
 import com.android.camera.CameraManager.CameraAFMoveCallback;
 import com.android.camera.CameraManager.CameraPictureCallback;
@@ -142,6 +143,7 @@ public class PhotoModule
     private int mBurstSnapNum = 1;
     private int mReceivedSnapNum = 0;
     public boolean mFaceDetectionEnabled = false;
+    private boolean mLgeHdrMode = false;
     private DrawAutoHDR mDrawAutoHDR;
    /*Histogram variables*/
     private GraphView mGraphView;
@@ -282,6 +284,8 @@ public class PhotoModule
     private byte[] mLastJpegData;
     private int mLastJpegOrientation = 0;
 
+	private static Context mApplicationContext = null;
+	
     private boolean mIsBokehMode = false;
     private TextView mBokehTipText;
     private boolean mDepthSuccess = false;
@@ -597,8 +601,8 @@ public class PhotoModule
 
         CameraSettings.upgradeGlobalPreferences(mPreferences.getGlobal(), activity);
         mCameraId = getPreferredCameraId(mPreferences);
-
         mContentResolver = mActivity.getContentResolver();
+        mApplicationContext = CameraApp.getContext();
 
         // Surface texture is from camera screen nail and startPreview needs it.
         // This must be done before startPreview.
@@ -633,6 +637,11 @@ public class PhotoModule
         brightnessProgressBar.setVisibility(View.INVISIBLE);
         Storage.setSaveSDCard(
             mPreferences.getString(CameraSettings.KEY_CAMERA_SAVEPATH, "0").equals("1"));
+
+        // LGE HDR mode
+        if (mApplicationContext != null) {
+            mLgeHdrMode = mApplicationContext.getResources().getBoolean(R.bool.lge_hdr_mode);
+        }
     }
 
     private void initializeControlByIntent() {
@@ -1277,6 +1286,7 @@ public class PhotoModule
             implements CameraPictureCallback {
         @Override
         public void onPictureTaken(byte [] data, CameraProxy camera) {
+            Log.d(TAG, "PostViewPictureCallback: onPictureTaken()");
             mPostViewPictureCallbackTime = System.currentTimeMillis();
             Log.v(TAG, "mShutterToPostViewCallbackTime = "
                     + (mPostViewPictureCallbackTime - mShutterCallbackTime)
@@ -1288,6 +1298,7 @@ public class PhotoModule
             implements CameraPictureCallback {
         @Override
         public void onPictureTaken(byte [] rawData, CameraProxy camera) {
+            Log.d(TAG, "RawPictureCallback: onPictureTaken()");
             mRawPictureCallbackTime = System.currentTimeMillis();
             Log.v(TAG, "mShutterToRawCallbackTime = "
                     + (mRawPictureCallbackTime - mShutterCallbackTime) + "ms");
@@ -1303,6 +1314,7 @@ public class PhotoModule
 
         @Override
         public void onPictureTaken(final byte [] jpegData, CameraProxy camera) {
+            Log.d(TAG, "LongshotPictureCallback: onPictureTaken()");
             if (mPaused) {
                 return;
             }
@@ -1400,6 +1412,7 @@ public class PhotoModule
 
         @Override
         public void onPictureTaken(byte [] jpegData, CameraProxy camera) {
+			Log.d(TAG, "JpegPictureCallback: onPictureTaken()");
             mCallTime ++;
             if (mIsBokehMode && !PERSIST_BOKEH_DEBUG_CHECK && mSaveBokehXmp) {
                 if (jpegData != null && mCallTime == 1) {
@@ -1469,6 +1482,7 @@ public class PhotoModule
                     && (mCameraState != LONGSHOT)
                     && (mSnapshotMode != CameraInfoWrapper.CAMERA_SUPPORT_MODE_ZSL)
                     && (mReceivedSnapNum == mBurstSnapNum);
+            needRestartPreview |= mLgeHdrMode;
             if (needRestartPreview) {
                 setupPreview();
                 if (CameraUtil.FOCUS_MODE_CONTINUOUS_PICTURE.equals(
@@ -3538,9 +3552,9 @@ public class PhotoModule
         String hdrMode = mPreferences.getString(
                 CameraSettings.KEY_HDR_MODE,
                 mActivity.getString(R.string.pref_camera_hdr_mode_default));
-        Log.v(TAG, "HDR Mode value =" + hdrMode);
         if (CameraUtil.isSupported(hdrMode,
                 CameraSettings.getSupportedHDRModes(mParameters))) {
+            Log.v(TAG, "HDR Mode value =" + hdrMode);
             mParameters.set(CameraSettings.KEY_SNAPCAM_HDR_MODE, hdrMode);
         }
 
@@ -3548,9 +3562,9 @@ public class PhotoModule
         String hdrNeed1x = mPreferences.getString(
                 CameraSettings.KEY_HDR_NEED_1X,
                 mActivity.getString(R.string.pref_camera_hdr_need_1x_default));
-        Log.v(TAG, "HDR need 1x value =" + hdrNeed1x);
         if (CameraUtil.isSupported(hdrNeed1x,
                 CameraSettings.getSupportedHDRNeed1x(mParameters))) {
+            Log.v(TAG, "HDR need 1x value =" + hdrNeed1x);
             mParameters.set(CameraSettings.KEY_SNAPCAM_HDR_NEED_1X, hdrNeed1x);
         }
 
@@ -4165,8 +4179,8 @@ public class PhotoModule
                 mActivity.getString(R.string.pref_camera_hdr_plus_default));
         boolean hdrOn = onValue.equals(hdr);
         boolean hdrPlusOn = onValue.equals(hdrPlus);
-
         boolean doGcamModeSwitch = false;
+
         if (hdrPlusOn && GcamHelper.hasGcamCapture()) {
             // Kick off mode switch to gcam.
             doGcamModeSwitch = true;
@@ -4179,7 +4193,13 @@ public class PhotoModule
                     mCameraDevice.setParameters(mParameters);
                     mParameters = mCameraDevice.getParameters();
                 }
+                if (mLgeHdrMode) {
+                    mParameters.set(CameraSettings.KEY_SNAPCAM_HDR_MODE, CameraSettings.LGE_HDR_MODE_ON);
+                }
             } else {
+                if (mLgeHdrMode) {
+                    mParameters.set(CameraSettings.KEY_SNAPCAM_HDR_MODE, CameraSettings.LGE_HDR_MODE_OFF);
+                }
                 mSceneMode = mPreferences.getString(
                         CameraSettings.KEY_SCENE_MODE,
                         mActivity.getString(R.string.pref_camera_scenemode_default));
