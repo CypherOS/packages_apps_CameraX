@@ -1507,7 +1507,9 @@ public class PhotoModule
             Log.v(TAG, "mPictureDisplayedToJpegCallbackTime = "
                     + mPictureDisplayedToJpegCallbackTime + "ms");
 
-            mFocusManager.updateFocusUI(); // Ensure focus indicator is hidden.
+            mHandler.post(() -> {
+                mFocusManager.updateFocusUI(); // Ensure focus indicator is hidden.
+            });
 
             boolean needRestartPreview = !mIsImageCaptureIntent
                     && !mPreviewRestartSupport
