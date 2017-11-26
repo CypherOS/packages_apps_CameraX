@@ -276,9 +276,7 @@ public class CameraControls extends RotatableLayout implements Rotatable {
     }
 
     public void showRemainingPhotoCnt() {
-        mHideRemainingPhoto = false;
         mRemainingPhotos.setVisibility(View.VISIBLE);
-        mRemainingPhotosText.setVisibility(View.VISIBLE);
     }
 
     private class ArrowTextView extends TextView {

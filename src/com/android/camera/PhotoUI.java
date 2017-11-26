@@ -438,14 +438,6 @@ public class PhotoUI extends CameraUI implements PieListener,
         }
     }
 
-    public void hideRemainingPhotoCnt() {
-        mCameraControls.hideRemainingPhotoCnt();
-    }
-
-    public void showRemainingPhotoCnt() {
-        mCameraControls.showRemainingPhotoCnt();
-    }
-
     @Override
     public void showUI() {
         if (mMenu != null && mMenu.isMenuBeingShown()) {
