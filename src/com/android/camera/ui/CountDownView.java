@@ -32,7 +32,7 @@ import android.view.animation.AnimationUtils;
 import android.widget.FrameLayout;
 import android.widget.TextView;
 
-import org.codeaurora.snapcam.R;
+import co.aoscp.camerax.R;
 
 public class CountDownView extends FrameLayout {
 
