@@ -3425,7 +3425,7 @@ public class PhotoModule
                 sharpness = Integer.parseInt(sharpnessStr);
         } else {
                 sharpness = Integer.parseInt(sharpnessStr) *
-                        (mParameters.getMaxSharpness()/MAX_SHARPNESS_LEVEL);
+                        (ParametersWrapper.getMaxSharpness(mParameters)/MAX_SHARPNESS_LEVEL);
         }
 
         Log.v(TAG, "Sharpness value =" + sharpness);
